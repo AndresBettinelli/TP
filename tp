@@ -1,0 +1,130 @@
+/* 	
+	Alumno: Bettinelli, Andrés Alejandro
+	Legajo: 155505-4
+	Curso:	K1091
+	Trabajo Práctico Número 1
+*/
+
+#include <iostream>
+using namespace std;
+long hsTrabajadas (long, long, long);
+long totalhsTra (long, long);
+
+#define MFN 5001
+
+// Funcion 5, devuelve las horas trabajada en un dia
+long hsTrabajadas (long sal, long ent, long hor)
+{
+	if((sal%100)<(ent%100))
+	{
+		(hor) = ((sal) - (ent)) - 40;
+	}
+	else
+	{
+		(hor) = ((sal) - (ent));
+	}
+}
+
+//Funcion 6, devuelve las horas trabajadas en el mes
+long totalhsTra (long total, long mas)
+{
+	if(((total%100)+(mas%100)) > 59)
+	{
+		(total) += (mas) + 40;
+	}
+	else
+	{
+		(total) += (mas);
+	}
+	return total;
+}
+
+// Estructura para el archivo binario
+struct eAsistencia
+{
+	long Dia;
+	long horaent;
+	long horasal;
+} eAsi;
+
+int main ()
+{
+	long nMes = 0, cDia = 0, nEmp = 0;
+	char fn[MFN+1];
+	
+	//Informacion 1: se pide el numero del mes y día 
+	cout << "Ingrese el numero del mes y luego ingrese la cantidad de dias de dicho mes:"<<endl;
+	cin >> nMes;
+	cin >> cDia;
+	
+	//Informacion 2: se pide el numero del empleado
+	cout << "Ingrese el numero del empleado:"<<endl;
+	cin >> nEmp;
+	while(nEmp<1000 || nEmp>5000)
+	{
+		cout << "\nEl numero ingresado no es correcto.\nRecuerde que el numero debe estar entre 1000 y 5000."<<endl;
+		cin >> nEmp;
+	}
+	
+	//Informacion 3: se revisa el archivo binario
+	FILE * bin;
+	snprintf(fn,MFN,"%ld.dat", nEmp);
+	bin = fopen(fn,"rb");
+
+	//el vector vIna[] guardará los días de inasistencia, su indice será iIna (Punto 1)
+	//el vector vHs8[] guardará los días trabajados menos de 8 horas, su índice será iHs8 (Punto 2)
+	long vIna[cDia], vHs8[cDia];
+	long iIna=0, iHs8=0;
+	// dNum para ir viendo día por día, dHsT para guardar las horas trabajas por dia, mHsT lo mismo pero con mes
+	long dNum = 1;
+	long dHsT = 0, mHsT = 0;
+
+	
+	fread(&eAsi, sizeof(struct eAsistencia), 1, bin);
+	
+	while(dNum <= cDia)
+	{
+		if(dNum == eAsi.Dia) 
+		{
+			//Punto 3 (horas trabajas al mes)
+			dHsT = hsTrabajadas(eAsi.horasal,eAsi.horaent,dHsT);
+			mHsT = totalhsTra(mHsT,dHsT);
+			if(dHsT < 800) //Punto 2 (días trabajados menos de 8 horas)
+			{
+				vHs8[iHs8] = dNum;
+				iHs8++;
+			}
+			fread(&eAsi, sizeof(struct eAsistencia), 1, bin);
+		}
+		else //Punto 1 (días de inasistencia)
+		{
+			vIna[iIna] = dNum;
+			iIna++;
+		}
+		dNum++;
+	}
+	fclose(bin);
+
+	float prom = 0;
+	prom = (mHsT)/(cDia-iIna);
+
+	// Archivo de texto
+	FILE * afin;
+	afin = fopen("Asistencia.txt", "wt");
+	fprintf(afin,"Nombre:\tBettinelli, Andrés Alejandro\nCurso:\tK1091\nLegajo:\t105.505-4 \n\n");
+	fprintf(afin,"Los dias de inasistencia en el mes %ld del empleado numero %ld fueron: \n", nMes, nEmp);
+	for(int i=0; i < iIna-1; i++)
+	{
+		fprintf(afin,"%ld,\n",vIna[i]);
+	}
+	fprintf(afin,"%ld.\n",vIna[iIna-1]);
+	fprintf(afin,"\nLos dias que se trabajaron menos de 8 horas son:\n");
+	for(int i=0; i < iHs8-1; i++)
+	{
+		fprintf(afin,"%ld,\n",vHs8[i]);
+	}
+	fprintf(afin,"%ld.\n",vHs8[iHs8-1]);
+	fprintf(afin,"\nLa cantidad de horas trabajadas: %ld.", mHsT);
+	fprintf(afin,"\nLa cantidad promedia de horas trabajadas en dias presente: %4.0f.", prom);
+	fclose(afin);
+}
